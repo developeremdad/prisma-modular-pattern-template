@@ -16,7 +16,36 @@ import {
 interface UserWithOptionalPassword extends Omit<User, 'password'> {
   password?: string;
 }
+// Function to get the keys of a model
+async function getModelKeys(modelName: string): Promise<string[]> {
+  try {
+      // Dynamically access the model from the Prisma client
+      const model = (prisma as any)[modelName];  // Type assertion to 'any'
 
+      if (!model) {
+          console.warn(`Model '${modelName}' not found on Prisma client.`);
+          return [];
+      }
+
+      // Attempt to find the first record of the model
+      const sampleRecord = await model.findFirst();
+
+      if (!sampleRecord) {
+          console.warn(`No records found for model '${modelName}'. Ensure your database has at least one record to correctly retrieve model keys.`);
+          return [];
+      }
+
+      // Extract the keys from the sample record object
+      const keys = Object.keys(sampleRecord);
+      return keys;
+
+  } catch (error) {
+      console.error(`Error getting model keys for '${modelName}':`, error);
+      return [];
+  } finally {
+      await prisma.$disconnect();
+  }
+}
 const registerUserIntoDB = async (payload: User) => {
   const hashedPassword: string = await bcrypt.hash(payload.password, 12);
   const userData = {
@@ -37,11 +66,14 @@ const registerUserIntoDB = async (payload: User) => {
 };
 
 const getAllUsersFromDB = async (query: any) => {
-  const usersQuery = new QueryBuilder(prisma.user, query);
+  const keys = await getModelKeys('user');
+  const usersQuery = new QueryBuilder(prisma.user, query, keys);
   const result = await usersQuery
     .search(['firstName', 'lastName', 'email'])
     .filter()
     .sort()
+    .fields()
+    .exclude()
     .paginate()
     .execute();
   const pagination = await usersQuery.countTotal();
