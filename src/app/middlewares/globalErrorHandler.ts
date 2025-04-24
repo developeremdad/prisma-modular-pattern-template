@@ -28,7 +28,7 @@ const globalErrorHandler = (
   } else if (err?.code === 'P2002') {
     // Handle Prisma Duplicate entity error
     statusCode = 409;
-    message = `Duplicate entity on the fields: ${err.meta?.target}`;
+    message = `Duplicate entity on the fields: ${err.meta?.target?.split('_')[1]}`;
     errorDetails = { code: err.code, target: err.meta?.target };
   } else if (err?.code === 'P2003') {
     // Handle Prisma Foreign Key constraint error

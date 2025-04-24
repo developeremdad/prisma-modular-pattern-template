@@ -23,7 +23,7 @@ const globalErrorHandler = (err, req, res, next) => {
     else if ((err === null || err === void 0 ? void 0 : err.code) === 'P2002') {
         // Handle Prisma Duplicate entity error
         statusCode = 409;
-        message = `Duplicate entity on the fields: ${(_b = (_a = err.meta) === null || _a === void 0 ? void 0 : _a.target) === null || _b === void 0 ? void 0 : _b.join(', ')}`;
+        message = `Duplicate entity on the fields: ${(_b = (_a = err.meta) === null || _a === void 0 ? void 0 : _a.target) === null || _b === void 0 ? void 0 : _b.split('_')[1]}`;
         errorDetails = { code: err.code, target: (_c = err.meta) === null || _c === void 0 ? void 0 : _c.target };
     }
     else if ((err === null || err === void 0 ? void 0 : err.code) === 'P2003') {

@@ -45,6 +45,35 @@ const generateEmailVerificationLink_1 = require("../../errors/helpers/generateEm
 const prisma_1 = __importDefault(require("../../utils/prisma"));
 const sendMail_1 = __importDefault(require("../../utils/sendMail"));
 const user_constant_1 = require("./user.constant");
+// Function to get the keys of a model
+function getModelKeys(modelName) {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            // Dynamically access the model from the Prisma client
+            const model = prisma_1.default[modelName]; // Type assertion to 'any'
+            if (!model) {
+                console.warn(`Model '${modelName}' not found on Prisma client.`);
+                return [];
+            }
+            // Attempt to find the first record of the model
+            const sampleRecord = yield model.findFirst();
+            if (!sampleRecord) {
+                console.warn(`No records found for model '${modelName}'. Ensure your database has at least one record to correctly retrieve model keys.`);
+                return [];
+            }
+            // Extract the keys from the sample record object
+            const keys = Object.keys(sampleRecord);
+            return keys;
+        }
+        catch (error) {
+            console.error(`Error getting model keys for '${modelName}':`, error);
+            return [];
+        }
+        finally {
+            yield prisma_1.default.$disconnect();
+        }
+    });
+}
 const registerUserIntoDB = (payload) => __awaiter(void 0, void 0, void 0, function* () {
     const hashedPassword = yield bcrypt.hash(payload.password, 12);
     const userData = Object.assign(Object.assign({}, payload), { password: hashedPassword });
@@ -57,11 +86,14 @@ const registerUserIntoDB = (payload) => __awaiter(void 0, void 0, void 0, functi
     return userWithOptionalPassword;
 });
 const getAllUsersFromDB = (query) => __awaiter(void 0, void 0, void 0, function* () {
-    const usersQuery = new QueryBuilder_1.default(prisma_1.default.user, query);
+    const keys = yield getModelKeys('user');
+    const usersQuery = new QueryBuilder_1.default(prisma_1.default.user, query, keys);
     const result = yield usersQuery
         .search(['firstName', 'lastName', 'email'])
         .filter()
         .sort()
+        .fields()
+        .exclude()
         .paginate()
         .execute();
     const pagination = yield usersQuery.countTotal();
